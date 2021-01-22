@@ -1,6 +1,6 @@
-Morning session
+## Morning session
 
-Afternoon session
+## Afternoon session  
 Please, BEFORE THE CLASS, run the following R code to install packages in preparation of our exercise with MoBsim:
 ```
 install.packages(c('shiny', 'shinyBS','pals','shinyjs', 'devtools'))
