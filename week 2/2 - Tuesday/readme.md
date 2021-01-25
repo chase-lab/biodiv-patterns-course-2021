@@ -11,7 +11,7 @@ Instructors: all
 Instructors: Thore, Emma, Roel
 
 #### During this session you will...
-- think about the data you need to answer your research question
+- think about the data and metadata you need to answer your research question
 - develop specific inclusion criteria for data sets to be included in your data base
 - learn about the basics of relational databases
 - construct the database structure for your research question
