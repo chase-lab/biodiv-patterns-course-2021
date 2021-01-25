@@ -1,3 +1,25 @@
-Morning session
+## Morning session  
 
-Afternoon session
+## Afternoon session  
+Before the practical, please install the following packages:
+
+
+```
+# Install directly from CRAN
+library(sp)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(gstat)
+library(raster)
+library(plotrix)
+library(wrswoR)
+library(geiger)
+library(vegan)
+library(vegetarian)
+library(gridExtra)
+
+# Install from GitHub repo:
+devtools::install_github("plthompson/mcomsimr")
+
+```
