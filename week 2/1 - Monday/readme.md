@@ -2,8 +2,8 @@
 Instructor: Jon
 
 ## Afternoon session: Diversity gradients (computer lab)
-Instructor: Thore Engel ("Tory")
-Email: thore.engel\@idiv.de 
+Instructor: Thore Engel ("Tory")  
+Email: thore.engel\@idiv.de
 
 
 #### During this session you will...
