@@ -1,9 +1,9 @@
 ## Morning session: Biodiversity gradients (lecture/discussion) 
 Instructor: Jon
 
-## Afternoon session: Diversity gradients (computer lab)\
-Instructor: Thore Engel ("Tory")\
-Email: thore.engel\@idiv.de \
+## Afternoon session: Diversity gradients (computer lab)
+Instructor: Thore Engel ("Tory")
+Email: thore.engel\@idiv.de 
 
 
 #### During this session you will...
