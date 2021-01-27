@@ -17,23 +17,8 @@ library(tidyverse)
 # load data
 load('~/Dropbox/4teaching/biodiv-patterns-course-2021/week 1/4 - Thursday/data/exp1.Rdata')
 
-# let's calculate the rarefaction curves first
-alpha_ibr <- experiment6_long %>% 
-  group_by(experiment, rep, treatment) %>% 
-  nest() %>% 
-  mutate(ibr = map(data, ~rarefaction(.x$n, method = 'IBR'))) %>% 
-  unnest(ibr) %>% 
-  mutate(individuals = 1:n()) %>% 
-  ungroup()
-  
-# plot ibr curves
-ggplot() +
-  facet_wrap(~treatment) +
-  geom_line(data = alpha_ibr,
-            aes(x = individuals, y = ibr, group = rep))
-
 # calculate N, S, and S_PIE
-bio_metrics <- experiment6_long %>% 
+bio_metrics <- experiment1_long %>% 
   group_by(experiment, rep, treatment) %>% 
   summarise(N = sum(n),
             S = n_distinct(species),
@@ -56,10 +41,45 @@ Sn <- experiment6_long %>%
 
 # join with other metrics
 bio_metrics <- left_join(bio_metrics,
-                          Sn %>% 
-                            unnest(Sn) %>% 
-                            select(-data),
-                          by = c('experiment', 'rep', 'treatment'))
+                         Sn %>% 
+                           unnest(Sn) %>% 
+                           select(-data),
+                         by = c('experiment', 'rep', 'treatment'))
+
+# let's calculate the rarefaction curves first
+alpha_ibr <- experiment1_long %>% 
+  group_by(experiment, rep, treatment) %>% 
+  nest() %>% 
+  mutate(ibr = map(data, ~rarefaction(.x$n, method = 'IBR'))) %>% 
+  unnest(ibr) %>% 
+  mutate(individuals = 1:n()) %>% 
+  ungroup()
+
+# get the mins for each group
+minN <- bio_metrics %>% 
+  group_by(treatment) %>% 
+  summarise(minN = min(N))
+
+alpha_ibr_bar <- alpha_ibr %>% 
+  group_by(experiment, treatment, individuals) %>% 
+  summarise(ibr_bar = mean(ibr)) %>% 
+  ungroup() %>% 
+  left_join(minN)
+
+# plot ibr curves
+ggplot() +
+  facet_wrap(~treatment) +
+  geom_line(data = alpha_ibr,
+            aes(x = individuals, y = ibr, group = rep),
+            alpha = 0.5) +
+  geom_line(data = alpha_ibr_bar %>% 
+              filter(individuals < minN),
+          aes(x = individuals, y = ibr_bar), size = 2) +
+  labs(y = 'Number of species',
+       x = 'Number of individuals')
+
+
+# boxplots of the metrics as a function of treatment
 N_bxplot <- ggplot() +
   geom_boxplot(data = bio_metrics,
                aes(x = treatment, y = N))

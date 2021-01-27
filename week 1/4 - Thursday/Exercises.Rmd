@@ -29,7 +29,7 @@ Modify the 'rarefaction_metrics_demo.R' script (or write new scripts) to help yo
   
 #####Extended exercises:
 
-  *-* How would reduced sampling effort (i.e., fewer 'reps') influence inference, particularly experiment 6? Subsample 10 reps from the control and treatment to investigate.
+  *-* How would reduced sampling effort (i.e., fewer 'reps') influence inference, particularly experiment 6? Use a subsample (e.g., 5 reps) from the control and treatment to investigate. Plot the alpha- and gamma-scale rarefaction curves for each treatment in experiment 6 on the same panels.
   
   *-* write pseudocode (i.e., a recipe or algorithm of ordered, logical steps) for how to calculate uncertainty at the gamma- and beta-scales. Bonus: write code to implement your 'recipe' and plot results. Hint: how was this done in the MPA paper?
   
