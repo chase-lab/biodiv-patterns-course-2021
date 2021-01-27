@@ -1,0 +1,167 @@
+---
+title: "Introduction to statistical modelling"
+author: "Shane Blowes"
+date: "28 January 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+library(tidyverse)
+library(cowplot)
+load('~/Dropbox/4teaching/biodiv-patterns-course-2021/week 1/4 - Thursday/data/vltava.Rdata')
+```
+
+## Statistical modelling
+Short introduction to statistical models:
+
+- linear models
+- generalised linear models
+- non-linear models (e.g., basis expansion, generalised additive models, LOESS)
+
+## Linear models
+Linear models take the form:
+$$ y_i = \beta x_i + \epsilon_i,$$
+where $y_i$ is the observed *response* variable (here species richness), $\beta$ is a vector of estimated (unknown) parameters, $x_i$ are (known) covariates (can be continuous or categorical *predictors*), and $\epsilon_i$ are random variables (mutually independent with zero mean and variance, $\sigma^2$)
+
+
+```{r echo=FALSE}
+fig1 <- vdat %>%
+  ggplot() +
+  geom_point(aes(x = ELEVATION, y = S)) +
+  stat_smooth(method = 'lm', se = F,
+              aes(x = ELEVATION, y = S)) +
+  ylab('Species richness') +
+  xlab('Elevation (metres)') +
+  theme_bw()
+
+fig1a <- vdat %>%
+  ggplot() +
+  geom_point(aes(x = ELEVATION, y = S, group = LITHIC, colour = factor(LITHIC))) +
+  stat_smooth(method = 'lm', se = F,
+              aes(x = ELEVATION, y = S, colour = factor(LITHIC), group = factor(LITHIC))) +
+  scale_color_viridis_d(name = 'Lithic soil') +
+  ylab('Species richness') +
+  xlab('Elevation (metres)') +
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8), legend.background = element_blank())
+  
+lm_eqn = expression(paste(italic(y)[i], ' = ', beta, italic(x)[i], ' + ', epsilon[i], sep = ''))
+f1 <- ggdraw() + draw_label(lm_eqn, size = 14)
+f1 <- plot_grid(f1, fig1, ncol = 1, rel_heights = c(0.2, 0.9))
+plot_grid(fig1, fig1a, nrow = 1)
+```
+
+### All statistical modelling involves a trade-off between *underfitting* and *overfitting*.
+- *Underfitting* results in poor prediction by learning too little from the data
+- *Overfitting* results in poor prediction by learning too much from the data
+
+
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+fig2a <- vdat %>%
+  ggplot() +
+  geom_point(aes(x = ELEVATION, y = S)) +
+  stat_smooth(method = 'lm', se = F,
+              aes(x = ELEVATION, y = S),
+              formula = y ~ x + I(x^2)) +
+  ylab('Species richness') +
+  xlab('Elevation (metres)') +
+  theme_bw()
+
+eqn2a <- expression(paste(italic(y)[i], ' = ', beta[1], italic(x)[i], ' + ', beta[2], italic(x)[i]^2, ' + ', epsilon[i], sep = ''))
+f2a <- ggdraw() + draw_label(eqn2a, size = 14)
+f2a <- plot_grid(f2a, fig2a, ncol = 1, rel_heights = c(0.2, 0.9))
+
+fig2b <- vdat %>%
+  ggplot() +
+  geom_point(aes(x = ELEVATION, y = S)) +
+  stat_smooth(method = 'lm', se = F,
+              aes(x = ELEVATION, y = S),
+              formula = y ~ x + I(x^2) + I(x^3)) +
+  ylab('Species richness') +
+  xlab('Elevation (metres)') +
+  theme_bw()
+
+eqn2b <- expression(paste(italic(y)[i], ' = ', beta[1], italic(x)[i], ' + ', beta[2], italic(x)[i]^2, '\n+ ', beta[3], italic(x)[i]^3, ' + ', epsilon[i], sep = ''))
+f2b <- ggdraw() + draw_label(eqn2b, size = 14)
+f2b <- plot_grid(f2b, fig2b, ncol = 1, rel_heights = c(0.2, 0.9))
+
+fig2c <- vdat %>%
+  ggplot() +
+  geom_point(aes(x = ELEVATION, y = S)) +
+  stat_smooth(se = F,
+              aes(x = ELEVATION, y = S)) +
+  stat_smooth(method = 'gam', se = F,
+              aes(x = ELEVATION, y = S),
+              formula = y ~ s(x, bs = 'cs'), colour = 'black') +
+  ylab('Species richness') +
+  xlab('Elevation (metres)') +
+  theme_bw()
+
+eqn2c <- expression(paste(italic(y)[i], ' = ', italic(f), '(', italic(x)[i], ') + ', epsilon[i], sep = ''))
+f2c <- ggdraw() + draw_label(eqn2c, size = 14)
+f2c <- plot_grid(f2c, fig2c, ncol = 1, rel_heights = c(0.2, 0.9))
+
+plot_grid(f1, f2a, f2b, f2c, nrow = 2, ncol = 2)
+```
+
+## Generalized linear models
+
+Extend linear models to allow for response distributions other than normal. Now, our observed values, $Y_i$, are drawn from the a distribution of the so-called exponential family (e.g., Bernoulli, normal, gamma, exponential, Poisson, beta). The basic structure remains familiar, but with the addition of a 'link' function.
+
+$E(Y_i)=\mu_i$, and $var(Y_i)=\sigma^2$
+
+$g(\mu_i)=\beta X_i$, where $g()$ is a link function.
+
+
+
+For example, all the models above assume normally distributed error, so
+
+$Y_i$ ~ $N(\mu_i, \sigma^2)$
+
+$E(Y_i)=\mu_i$, and $var(Y_i)=\sigma^2$
+
+$g(\mu_i)=\beta X_i$, where $g()$ is referred to as the identity link function.
+
+
+
+Alternatively, as our estimate of species richness arises from a *count* process, we could formulate the model using the poisson distribution
+
+$Y_i$ ~ $poisson(\mu_i)$
+
+
+$E(Y_i)=\mu_i$, and $var(Y_i)=\mu_i$
+
+$log(\mu_i)=\beta X_i$, and $g()$ is now the log link function.
+
+
+
+```{r echo = FALSE}
+fig3a <- vdat %>%
+  ggplot() +
+  geom_point(aes(x = ELEVATION, y = S)) +
+  stat_smooth(method = 'lm', se = F,
+              aes(x = ELEVATION, y = S, colour = 'lm', linetype = 'lm')) +
+  stat_smooth(method = 'glm', method.args = list(family = 'poisson'), se = F,
+              aes(x = ELEVATION, y = S, colour = 'glm', linetype = 'glm')) +
+  scale_colour_manual(name = 'method', values = c('lm' = 'dark blue',
+                                 'glm' = 'black')) +
+  scale_linetype_manual(name = 'method', values = c('lm' = 1,
+                                 'glm' = 2)) +
+  ylab('Species richness') +
+  xlab('Elevation (metres)') +
+  theme_bw() +
+  theme(legend.position = c(0.8, 0.8))
+
+fig3b <- site_occupancy %>%
+  ggplot() +
+  geom_point(aes(x = pH, y = occurrence)) +
+  stat_smooth(aes(x = pH, y = occurrence),
+              method = 'glm', method.args = list(family = 'binomial')) +
+  scale_y_continuous(breaks = c(0, 1)) +
+  ylab('Probability of occurrence') + 
+  theme_bw()
+
+plot_grid(fig3a, fig3b, nrow = 1)
+```
