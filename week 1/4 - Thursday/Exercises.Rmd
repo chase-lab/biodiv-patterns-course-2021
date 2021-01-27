@@ -1,0 +1,36 @@
+---
+title: "Measuring biodiversity and its change"
+author: "Shane Blowes"
+date: "27/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Independent reading
+
+Read 'Mediterranean marine protected areas have higher biodiversity via increased evenness, not abundance'. 
+
+  *-* how did fish biodiversity respond to protection from fishing in the Mediterranean?
+  
+  *-* was the response scale-dependent? How?
+  
+  *-* how was uncertainty estimated at the gamma- and beta-scale in the discrete analyses?
+  
+  *-* how do the discrete versus continuous-scale analyses differ? 
+  
+## Exercises: 
+
+Modify the 'rarefaction_metrics_demo.R' script (or write new scripts) to help you examine how diversity responded in experiments 2 - 6 (exp2.Rdata, exp3.Rdata, etc. in the data folder).
+
+  *-* calculate and plot the control and treatment data at the alpha-, beta- and gamma-scales. Plot rarefaction curves at the alpha- and gamma-scales. Practice reading and interpreting these figures, and be prepared to discuss how assemblages responded to the 'experimental' treatments. 
+  
+#####Extended exercises:
+
+  *-* How would reduced sampling effort (i.e., fewer 'reps') influence inference, particularly experiment 6? Subsample 10 reps from the control and treatment to investigate.
+  
+  *-* write pseudocode (i.e., a recipe or algorithm of ordered, logical steps) for how to calculate uncertainty at the gamma- and beta-scales. Bonus: write code to implement your 'recipe' and plot results. Hint: how was this done in the MPA paper?
+  
+  *-* how would you test the response to the experimental treatment at the alpha-scale statistically? Implement such a test in R.
