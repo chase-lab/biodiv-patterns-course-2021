@@ -8,6 +8,6 @@ Functional diversity exercises
 ## Afternoon session (13:00-15:00)
 Lecture on phylogenetic diversity
 
-Run the phylogenetic diversity R code with BCI plot data or your own data 
+Run the R code with BCI plot data or your own data 
 
 Wrap up
