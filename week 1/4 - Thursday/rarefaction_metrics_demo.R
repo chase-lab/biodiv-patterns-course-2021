@@ -14,8 +14,9 @@ library(tidyverse)
 # paths to files, and locations where you save any output will
 # need to be modified for your environment (computer)
 
-# load data
+# load data (I can't get this working when using a github url currently, need to download to local directory first)
 load('~/Dropbox/4teaching/biodiv-patterns-course-2021/week 1/4 - Thursday/data/exp1.Rdata')
+load('~/Downloads/exp1.Rdata')
 
 # calculate N, S, and S_PIE
 bio_metrics <- experiment1_long %>% 
@@ -30,7 +31,7 @@ bio_metrics <- experiment1_long %>%
 targetN <- min(bio_metrics$N)
 
 # calculate expected richness for targetN
-Sn <- experiment6_long %>% 
+Sn <- experiment1_long %>% 
   mutate(targetN = targetN) %>% 
   group_by(experiment, rep, treatment) %>% 
   nest(data = c(species, n, targetN)) %>% 
@@ -55,26 +56,12 @@ alpha_ibr <- experiment1_long %>%
   mutate(individuals = 1:n()) %>% 
   ungroup()
 
-# get the mins for each group
-minN <- bio_metrics %>% 
-  group_by(treatment) %>% 
-  summarise(minN = min(N))
-
-alpha_ibr_bar <- alpha_ibr %>% 
-  group_by(experiment, treatment, individuals) %>% 
-  summarise(ibr_bar = mean(ibr)) %>% 
-  ungroup() %>% 
-  left_join(minN)
-
 # plot ibr curves
 ggplot() +
   facet_wrap(~treatment) +
   geom_line(data = alpha_ibr,
             aes(x = individuals, y = ibr, group = rep),
             alpha = 0.5) +
-  geom_line(data = alpha_ibr_bar %>% 
-              filter(individuals < minN),
-          aes(x = individuals, y = ibr_bar), size = 2) +
   labs(y = 'Number of species',
        x = 'Number of individuals')
 
@@ -101,7 +88,7 @@ cowplot::plot_grid(N_bxplot, S_bxplot,  Sn_bxplot, S_PIE_bxplot,
                    nrow = 2)
 
 ##------all discrete scales
-wide_dat <- experiment6_long %>% 
+wide_dat <- experiment1_long %>% 
   spread(key = species, value = n)
 
 wide_dat[is.na(wide_dat)] <- 0
@@ -151,7 +138,7 @@ ggplot() +
              aes(x = treatment, y = value))
 
 # gamma-scale rarefaction
-gamma_ibr <- experiment6_long %>% 
+gamma_ibr <- experiment1_long %>% 
   # first, gather collate species across the different reps
   group_by(experiment, treatment, species) %>% 
   summarise(n = sum(n)) %>% 
@@ -171,3 +158,27 @@ ggplot() +
   facet_wrap(~treatment) +
   geom_line(data = gamma_ibr,
             aes(x = individuals, y = ibr))
+
+# sometimes it is useful to visualise the 'mean' alpha-scale curve
+# get the mins for each group
+minN <- bio_metrics %>% 
+  group_by(treatment) %>% 
+  summarise(minN = min(N))
+
+alpha_ibr_bar <- alpha_ibr %>% 
+  group_by(experiment, treatment, individuals) %>% 
+  summarise(ibr_bar = mean(ibr)) %>% 
+  ungroup() %>% 
+  left_join(minN)
+
+# plot ibr curves
+ggplot() +
+  facet_wrap(~treatment) +
+  geom_line(data = alpha_ibr,
+            aes(x = individuals, y = ibr, group = rep),
+            alpha = 0.5) +
+  geom_line(data = alpha_ibr_bar %>% 
+              filter(individuals < minN),
+            aes(x = individuals, y = ibr_bar), size = 2) +
+  labs(y = 'Number of species',
+       x = 'Number of individuals')
