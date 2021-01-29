@@ -1,6 +1,6 @@
 ## Morning session: Literature search
 
-During the session, you will use the web of science to do systematic literaturre searchs
+During the session, you will use the web of science to do systematic literaturre searchs 
 ** **Make sure you can use web of science. If can't, please login the VPN from University
 
 
