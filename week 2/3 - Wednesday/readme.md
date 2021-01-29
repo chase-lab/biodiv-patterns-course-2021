@@ -1,6 +1,7 @@
 ## Morning session: Literature search
 
-
+During the session, you will use the web of science to do systematic literaturre search.
+Make sure you can use web of science. If can't, please login the VPN from University.
 
 
 ## Afternoon session: Data extraction
