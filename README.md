@@ -14,7 +14,7 @@ Lecture notes and materials for our course on biodiversity patterns
 | | | | | |
 |Monday, Feb 1 | Biodiversity gradients (lecture/discussion) | Jon | Diversity gradients (computer lab) | Thore| 
 |Tuesday, Feb 2  | Class project (elevation gradients)  | All  | Database structure and metadata | Thore, Emma, Roel | 
-|Wednesday, Feb 3 | Literature search tools | Wubing, Jon, Roel,  ?? | Data mining/ Extraction | Alban, Thore | 
+|Wednesday, Feb 3 | Literature search tools | Wubing, Jon, Roel,  ?? | Data extraction | Alban, Thore | 
 |Thursday, Feb 4 | Data collection  |  | Data collection |  | 
 |Friday, Feb 5 | Data collection |  | Data collection |  | 
 | | | | | |
