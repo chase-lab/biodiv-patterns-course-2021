@@ -1,9 +1,9 @@
 # Structuring data
 
+load('./Week 2/3 - Wednesday/data extraction practical/raw data/mammals_raw')
 mammals <- lapply(mammals_raw, function(mat) as.data.frame(mat))
 
-
-# harmonising column names for all and deleting first row for all
+# harmonising column names for all pages and deleting first row for all
 mammals <- lapply(mammals, function(dt) setNames(dt, c('english_name','species', unlist(dt[1,])[-(1:2)])))
 mammals <- lapply(mammals, function(dt) dt[-1,])
 
