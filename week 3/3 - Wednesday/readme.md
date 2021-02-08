@@ -1,3 +1,3 @@
-Morning session (extract covariates)
+Morning session
 
 Afternoon session
