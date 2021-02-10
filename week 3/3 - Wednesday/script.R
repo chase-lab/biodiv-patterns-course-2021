@@ -25,6 +25,7 @@ obs <- obs %>%
          S_PIE = map_dbl(abundances, function(x) pull(x,"number_individuals") %>% mobr::calc_SPIE())
          )
 
+
 # filter out sites with very low N
 obs <- obs %>%
   filter(N>5) # this number is kind of arbitrary
@@ -63,22 +64,44 @@ obs <- obs %>% left_join(dplyr::select(sites, elevation,latitude, longitude, sit
 
 # richness (S)
 obs %>%
-ggplot(aes(x=elevation, y= S, col= studyID))+geom_point()+ facet_wrap(~studyID)
+ggplot(aes(x=elevation, y= S, col= studyID))+geom_point()+ facet_wrap(~studyID, scales= "free")
 
 # abundance (N)
 obs %>%
-  ggplot(aes(x=elevation, y= N, col= studyID))+geom_point()+ facet_wrap(~studyID)
+  ggplot(aes(x=elevation, y= N, col= studyID))+geom_point()+facet_wrap(~studyID, scales= "free")
 
 # rarefied richness (S_n)
 obs %>%
-  ggplot(aes(x=elevation, y= S_n, col= studyID))+geom_point()+ facet_wrap(~studyID)
+  ggplot(aes(x=elevation, y= S_n, col= studyID))+geom_point()+ facet_wrap(~studyID, scales= "free")
 
 # "evenness" (S_PIE)
 obs %>%
-  ggplot(aes(x=elevation, y= S_PIE, col= studyID))+geom_point()+ facet_wrap(~studyID)
+  ggplot(aes(x=elevation, y= S_PIE, col= studyID))+geom_point()+ facet_wrap(~studyID, scales= "free")
 
 # Compare the patterns to the original studies. does it make sense? are we missing something?
 # What's going on  with Toasaa?
+
+
+# Draw the entire rarefaction curves.
+obs<- obs %>%
+  mutate(Sn_curve= map(abundances, function(x){
+    x=pull(x, "number_individuals")
+    out=tibble(n = 1:sum(x),
+               Sn_curve = mobr::rarefaction(x, method= "IBR")
+    )
+
+    return(out)
+  }
+
+  )
+  )
+
+
+obs %>% unnest(Sn_curve) %>%
+  ggplot(aes(n, Sn_curve, group = siteID, col = elevation))+
+  geom_line()+
+  facet_wrap(~studyID, scales = "free")+
+  scale_color_viridis_c( )
 
 
 # save our obs object with the results so you can use it for the statistics tomorrow
