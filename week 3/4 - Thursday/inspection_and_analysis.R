@@ -2,6 +2,7 @@ library(tidyverse)
 
 read_rds("week 3/3 - Wednesday/results.rds")
 
+obs
 # visual inspection and preliminary modelling of functional forms
 
 # this should allow us to answer our question of whether the functional
@@ -18,6 +19,7 @@ S_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= S, col= studyID),
               se = F,
               method = 'gam',
+              method.args = list(family = 'poisson'),
               formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship for across all studies
   # stat_smooth(aes(x=elevation, y= S), colour = 'black',
@@ -40,6 +42,7 @@ N_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= N, col= studyID),
               se = F,
               method = 'gam',
+              method.args = list(family = 'poisson'),
               formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship for across all studies
   # stat_smooth(aes(x=elevation, y= N), colour = 'black',
@@ -59,6 +62,7 @@ Sn_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= S_n, col= studyID),
               se = F,
               method = 'gam',
+              method.args = list(family = Gamma(link = 'log')),
               formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship across all studies
   # stat_smooth(aes(x=elevation, y= S_n), colour = 'black',
@@ -70,6 +74,7 @@ Sn_GAM <- obs %>%
 
 # "evenness" (S_PIE)
 S_PIE_GAM <- obs %>%
+  filter(studyID!='12_Toasaa_2020') %>% 
   ggplot() + 
   # facet_wrap(~studyID) +
   geom_point(aes(x=elevation, y= S_PIE, col= studyID)) + 
@@ -78,6 +83,7 @@ S_PIE_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= S_PIE, col= studyID),
               se = F,
               method = 'gam',
+              method.args = list(family = Gamma(link = 'log')),
               formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship across all studies
   # stat_smooth(aes(x=elevation, y= S_PIE), colour = 'black',
@@ -85,7 +91,8 @@ S_PIE_GAM <- obs %>%
   #             method = 'gam',
   #             formula = y ~ s(x, bs = 'cs', k = 3)) +
   scale_y_continuous(name = expression(paste('Evenness (', S[PIE], ')'))) +
-  theme(legend.position = 'none')
+  theme(legend.position = c(1,1),
+        legend.justification = c(1,1))
 
 cowplot::plot_grid(S_GAM, N_GAM,
                    Sn_GAM, S_PIE_GAM)
