@@ -28,7 +28,7 @@ S_GAM <- obs %>%
               se = F,
               method = 'gam',
               method.args = list(family = 'poisson'),
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship for across all studies
   # stat_smooth(aes(x=elevation, y= S), colour = 'black',
   #             se = F,
@@ -52,7 +52,7 @@ N_GAM <- obs %>%
               se = F,
               method = 'gam',
               method.args = list(family = 'poisson'),
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship for across all studies
   # stat_smooth(aes(x=elevation, y= N), colour = 'black',
   #             se = F,
@@ -73,7 +73,7 @@ Sn_GAM <- obs %>%
               se = F,
               method = 'gam',
               method.args = list(family = Gamma(link = 'log')),
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship across all studies
   # stat_smooth(aes(x=elevation, y= S_n), colour = 'black',
   #             se = F,
@@ -95,7 +95,7 @@ S_PIE_GAM <- obs %>%
               se = F,
               method = 'gam',
               method.args = list(family = Gamma(link = 'log')),
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship across all studies
   # stat_smooth(aes(x=elevation, y= S_PIE), colour = 'black',
   #             se = F,
@@ -108,7 +108,8 @@ S_PIE_GAM <- obs %>%
 cowplot::plot_grid(S_GAM, N_GAM,
                    Sn_GAM, S_PIE_GAM)
 
-
+ggsave('~/Dropbox/4teaching/biodiv-patterns-course-2021/week 3/4 - Thursday/elevation_gradient_results.png', 
+       width = 200, height = 200, units = 'mm')
 # Fit GAMs to each data set one at a time, and look at some diagnostic plots 
 library(mgcv)
 S_gam_fit_9_k3 <- gam(formula = S ~ s(elevation, k = 3),
@@ -161,16 +162,6 @@ fit_gams <- obs_nest %>%
          S_PIE_gam_k4 = map(data, ~gam(formula = .x$S_PIE ~ s(.x$elevation, k = 4),
                                     method = 'REML', 
                                     family = Gamma(link = 'log'))))
-
-gams_aic <- fit_gams %>% 
-  mutate()
-
-
-gams_aic %>% 
-  unnest(cols = c(S_k3_AICc, S_k4_AICc,
-                  N_k3_AICc, N_k4_AICc, 
-                  Sn_k3_AICc, Sn_k4_AICc,
-                  S_PIE_k3_AICc, S_PIE_k4_AICc))
 
 model_output <- fit_gams %>% 
   mutate(S_k3_AICc = map(S_gam_k3, ~AICc(.x)),
@@ -277,7 +268,8 @@ wrangle %>%
   ggplot() +
   facet_grid(metric~studyID, scales = 'free_y') +
   geom_point(aes(x = elevation, y = residuals, col = as.factor(k)),
-             alpha = 0.5)
+             alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2)
 
 
 # plot residuals ~ fitted for the two different values of k 
@@ -286,150 +278,73 @@ wrangle %>%
   ggplot() +
   facet_wrap(metric~studyID, scales = 'free', nrow = 4) +
   geom_point(aes(x = fitted, y = residuals, col = as.factor(k)),
-             alpha = 0.5)
+             alpha = 0.5) +
+  geom_hline(yintercept = 0, lty = 2)
 
-
-
-residuals %>% 
-  unnest(c(data, S_k3_resids, S_k4_resids,
-           N_k3_resids, N_k4_resids,
-           Sn_k3_resids, Sn_k4_resids,
-           S_PIE_k3_resids, S_PIE_k4_resids)) %>% 
+# plot observations ~ fitted for the two different values of k 
+wrangle %>% 
+  unnest(cols = c(data, residuals, fitted)) %>%
+  filter(metric=='S') %>% 
   ggplot() +
-  facet_wrap(~studyID) %>% 
-  ggplot()
+  facet_wrap(~studyID, scales = 'free', nrow = 4) +
+  geom_point(aes(x = fitted, y = S, col = as.factor(k)),
+             alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, lty = 2)
+
+wrangle %>% 
+  unnest(cols = c(data, residuals, fitted)) %>%
+  filter(metric=='N') %>% 
+  ggplot() +
+  facet_wrap(~studyID, scales = 'free', nrow = 4) +
+  geom_point(aes(x = fitted, y = N, col = as.factor(k)),
+             alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, lty = 2)
+
+wrangle %>% 
+  unnest(cols = c(data, residuals, fitted)) %>%
+  filter(metric=='Sn') %>% 
+  ggplot() +
+  facet_wrap(~studyID, scales = 'free', nrow = 4) +
+  geom_point(aes(x = fitted, y = Sn, col = as.factor(k)),
+             alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, lty = 2)
+
+wrangle %>% 
+  unnest(cols = c(data, residuals, fitted)) %>%
+  filter(metric=='S_PIE') %>% 
+  ggplot() +
+  facet_wrap(~studyID, scales = 'free', nrow = 4) +
+  geom_point(aes(x = fitted, y = S_PIE, col = as.factor(k)),
+             alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, lty = 2)
+
+aic_selection <- wrangle %>% 
+  unnest(cols = c(aicc)) %>% 
+  select(studyID, metric, k, aicc) %>% 
+  group_by(studyID, metric) %>% 
+  summarise(min_aicc = min(aicc),
+            k = k[aicc==min_aicc],
+            delta_aicc = max(aicc) - min(aicc))
+
+best_model_filter <- aic_selection %>% 
+  unite(filter, c(studyID, metric, k))
+
+best_models <- wrangle %>% 
+  unite(filter, c(studyID, metric, k), remove = F) %>% 
+  filter(filter %in% best_model_filter$filter) %>% 
+  select(-filter)
+
+predicted_values <- best_models %>% 
+  unnest(cols = c(data)) %>% 
+  group_by(studyID, metric) %>% 
+  summarise(elevation = seq(min(elevation), max(elevation), length.out = 50)) %>% 
+  nest(data = c(elevation)) %>% 
+  left_join(best_models %>% 
+              select(studyID, metric, gam)) %>% 
+  mutate(predicted = map(.x = gam,  ~predict(.x, newdata = elevation)))
 
 
-S_gam_fit_9_k3 <- gam(formula = S ~ s(elevation, k = 3),
-                      method = 'REML',
-                      data = obs %>% 
-                        filter(studyID=='9_Carvalho-Rocha_2021'))
 
-
-S_gam_fit_12_k3 <- gam(formula = S ~ s(elevation, k = 3), 
-                   data = obs %>% 
-                     filter(studyID=='12_Toasaa_2020'))
-par(mfrow=c(2,2))
-gam.check(S_gam_fit_12_k3)
-
-S_gam_fit_15_k3 <- gam(formula = S ~ s(elevation, k = 3), 
-                   data = obs %>% 
-                     filter(studyID=='15_Beirao_2020'))
-par(mfrow=c(2,2))
-gam.check(S_gam_fit_15_k3)
-
-S_gam_fit_17_k3 <- gam(formula = S ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='17_Acharya_2015'))
-par(mfrow=c(2,2))
-gam.check(S_gam_fit_17_k3)
-
-S_gam_fit_7_k3 <- gam(formula = S ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='7_Longino_2019'))
-par(mfrow=c(2,2))
-gam.check(S_gam_fit_7_k3)
-
-# repeat for N
-N_gam_fit_9_k3 <- gam(formula = N ~ s(elevation, k = 3), 
-                      data = obs %>% 
-                        filter(studyID=='9_Carvalho-Rocha_2021'))
-par(mfrow=c(2,2))
-gam.check(N_gam_fit_9_k3)
-
-N_gam_fit_12_k3 <- gam(formula = N ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='12_Toasaa_2020'))
-par(mfrow=c(2,2))
-gam.check(N_gam_fit_12_k3)
-
-N_gam_fit_15_k3 <- gam(formula = N ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='15_Beirao_2020'))
-par(mfrow=c(2,2))
-gam.check(N_gam_fit_15_k3)
-
-N_gam_fit_17_k3 <- gam(formula = N ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='17_Acharya_2015'))
-par(mfrow=c(2,2))
-gam.check(N_gam_fit_17_k3)
-
-N_gam_fit_7_k3 <- gam(formula = N ~ s(elevation, k = 3), 
-                      data = obs %>% 
-                        filter(studyID=='7_Longino_2019'))
-par(mfrow=c(2,2))
-gam.check(N_gam_fit_7_k3)
-
-# repeat for Sn
-S_n_gam_fit_9_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
-                      data = obs %>% 
-                        filter(studyID=='9_Carvalho-Rocha_2021'))
-par(mfrow=c(2,2))
-gam.check(S_n_gam_fit_9_k3)
-
-S_n_gam_fit_12_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='12_Toasaa_2020'))
-par(mfrow=c(2,2))
-gam.check(S_n_gam_fit_12_k3)
-
-S_n_gam_fit_15_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='15_Beirao_2020'))
-par(mfrow=c(2,2))
-gam.check(S_n_gam_fit_15_k3)
-
-# this is the one that changed shape most dramatically, 
-# let's have a closer look at k = 3 versus k = 4
-S_n_gam_fit_17_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
-                       data = obs %>% 
-                         filter(studyID=='17_Acharya_2015'))
-par(mfrow=c(2,2))
-gam.check(S_n_gam_fit_17_k3)
-
-S_n_gam_fit_17_k4 <- gam(formula = S_n ~ s(elevation, k = 4), 
-                         data = obs %>% 
-                           filter(studyID=='17_Acharya_2015'))
-par(mfrow=c(2,2))
-gam.check(S_n_gam_fit_17_k4)
-
-S_n_gam_fit_7_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
-                      data = obs %>% 
-                        filter(studyID=='7_Longino_2019'))
-par(mfrow=c(2,2))
-gam.check(S_n_gam_fit_7_k3)
-
-# repeat for S_PIE
-S_PIE_gam_fit_9_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
-                        data = obs %>% 
-                          filter(studyID=='9_Carvalho-Rocha_2021'))
-par(mfrow=c(2,2))
-gam.check(S_PIE_gam_fit_9_k3)
-
-S_PIE_gam_fit_12_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
-                         data = obs %>% 
-                           filter(studyID=='12_Toasaa_2020'))
-par(mfrow=c(2,2))
-gam.check(S_PIE_gam_fit_12_k3)
-
-S_PIE_gam_fit_15_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
-                         data = obs %>% 
-                           filter(studyID=='15_Beirao_2020'))
-par(mfrow=c(2,2))
-gam.check(S_PIE_gam_fit_15_k3)
-
-S_PIE_gam_fit_17_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
-                         data = obs %>% 
-                           filter(studyID=='17_Acharya_2015'))
-par(mfrow=c(2,2))
-gam.check(S_PIE_gam_fit_17_k3)
-
-S_PIE_gam_fit_7_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
-                        data = obs %>% 
-                          filter(studyID=='7_Longino_2019'))
-par(mfrow=c(2,2))
-gam.check(S_PIE_gam_fit_7_k3)
 
 # what about a map for the presentation...
 world <- map_data('world') %>% 
