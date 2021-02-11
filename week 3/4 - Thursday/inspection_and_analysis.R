@@ -223,3 +223,18 @@ S_PIE_gam_fit_7_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3),
                           filter(studyID=='7_Longino_2019'))
 par(mfrow=c(2,2))
 gam.check(S_PIE_gam_fit_7_k3)
+
+# what about a map for the presentation...
+world <- map_data('world') %>% 
+  as_tibble()
+
+ggplot() +
+  geom_polygon(data=world, 
+               aes(long, lat, group = group), colour=NA, fill='#CCCCCC', size=0) +
+  geom_point(data = obs,
+             aes(x = longitude, y = latitude, colour = studyID),#,shape = taxa),
+             # alpha = 0.6,
+             size = 1) +
+  coord_map('mollweide', ylim = c(-60, 90), xlim = c(-180, 180)) +
+  scale_x_continuous(breaks = seq(-180, 180, by = 30)) +
+  scale_y_continuous(breaks = c(0, -23.5, 23.5, -60, 60)) 
