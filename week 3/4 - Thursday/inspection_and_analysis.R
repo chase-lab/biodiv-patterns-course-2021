@@ -18,12 +18,12 @@ S_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= S, col= studyID),
               se = F,
               method = 'gam',
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship for across all studies
   # stat_smooth(aes(x=elevation, y= S), colour = 'black',
   #             se = F,
   #             method = 'gam',
-  #             formula = y ~ s(x, bs = 'cs', k = 4)) +
+  #             formula = y ~ s(x, bs = 'cs', k = 3)) +
   scale_y_continuous(#trans = 'log2',
                      name = 'Species richness (S)') +
   theme(legend.position = c(1,1),
@@ -40,12 +40,12 @@ N_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= N, col= studyID),
               se = F,
               method = 'gam',
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship for across all studies
   # stat_smooth(aes(x=elevation, y= N), colour = 'black',
   #             se = F,
   #             method = 'gam',
-  #             formula = y ~ s(x, bs = 'cs', k = 4)) +
+  #             formula = y ~ s(x, bs = 'cs', k = 3)) +
   scale_y_continuous(name = 'Number of individuals (N)') +
   theme(legend.position = 'none')
 
@@ -59,12 +59,12 @@ Sn_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= S_n, col= studyID),
               se = F,
               method = 'gam',
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship across all studies
   # stat_smooth(aes(x=elevation, y= S_n), colour = 'black',
   #             se = F,
   #             method = 'gam',
-  #             formula = y ~ s(x, bs = 'cs', k = 4)) +
+  #             formula = y ~ s(x, bs = 'cs', k = 3)) +
   scale_y_continuous(name = expression(paste('Rarefied richness (', S[n], ')'))) +
   theme(legend.position = 'none')
 
@@ -78,12 +78,12 @@ S_PIE_GAM <- obs %>%
   stat_smooth(aes(x=elevation, y= S_PIE, col= studyID),
               se = F,
               method = 'gam',
-              formula = y ~ s(x, bs = 'cs', k = 4)) +
+              formula = y ~ s(x, bs = 'cs', k = 3)) +
   # single relationship across all studies
   # stat_smooth(aes(x=elevation, y= S_PIE), colour = 'black',
   #             se = F,
   #             method = 'gam',
-  #             formula = y ~ s(x, bs = 'cs', k = 4)) +
+  #             formula = y ~ s(x, bs = 'cs', k = 3)) +
   scale_y_continuous(name = expression(paste('Evenness (', S[PIE], ')'))) +
   theme(legend.position = 'none')
 
