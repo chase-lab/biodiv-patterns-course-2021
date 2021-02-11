@@ -92,5 +92,134 @@ cowplot::plot_grid(S_GAM, N_GAM,
 
 
 # Fit GAMs to each data set one at a time, and look at some diagnostic plots 
+library(mgcv)
+S_gam_fit_9_k3 <- gam(formula = S ~ s(elevation, k = 3), 
+                 data = obs %>% 
+                   filter(studyID=='9_Carvalho-Rocha_2021'))
+par(mfrow=c(2,2))
+gam.check(S_gam_fit_9_k3)
 
-# fake data simulation exercise for polynomial lasso?!
+S_gam_fit_12_k3 <- gam(formula = S ~ s(elevation, k = 3), 
+                   data = obs %>% 
+                     filter(studyID=='12_Toasaa_2020'))
+par(mfrow=c(2,2))
+gam.check(S_gam_fit_12_k3)
+
+S_gam_fit_15_k3 <- gam(formula = S ~ s(elevation, k = 3), 
+                   data = obs %>% 
+                     filter(studyID=='15_Beirao_2020'))
+par(mfrow=c(2,2))
+gam.check(S_gam_fit_15_k3)
+
+S_gam_fit_17_k3 <- gam(formula = S ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='17_Acharya_2015'))
+par(mfrow=c(2,2))
+gam.check(S_gam_fit_17_k3)
+
+S_gam_fit_7_k3 <- gam(formula = S ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='7_Longino_2019'))
+par(mfrow=c(2,2))
+gam.check(S_gam_fit_7_k3)
+
+# repeat for N
+N_gam_fit_9_k3 <- gam(formula = N ~ s(elevation, k = 3), 
+                      data = obs %>% 
+                        filter(studyID=='9_Carvalho-Rocha_2021'))
+par(mfrow=c(2,2))
+gam.check(N_gam_fit_9_k3)
+
+N_gam_fit_12_k3 <- gam(formula = N ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='12_Toasaa_2020'))
+par(mfrow=c(2,2))
+gam.check(N_gam_fit_12_k3)
+
+N_gam_fit_15_k3 <- gam(formula = N ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='15_Beirao_2020'))
+par(mfrow=c(2,2))
+gam.check(N_gam_fit_15_k3)
+
+N_gam_fit_17_k3 <- gam(formula = N ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='17_Acharya_2015'))
+par(mfrow=c(2,2))
+gam.check(N_gam_fit_17_k3)
+
+N_gam_fit_7_k3 <- gam(formula = N ~ s(elevation, k = 3), 
+                      data = obs %>% 
+                        filter(studyID=='7_Longino_2019'))
+par(mfrow=c(2,2))
+gam.check(N_gam_fit_7_k3)
+
+# repeat for Sn
+S_n_gam_fit_9_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
+                      data = obs %>% 
+                        filter(studyID=='9_Carvalho-Rocha_2021'))
+par(mfrow=c(2,2))
+gam.check(S_n_gam_fit_9_k3)
+
+S_n_gam_fit_12_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='12_Toasaa_2020'))
+par(mfrow=c(2,2))
+gam.check(S_n_gam_fit_12_k3)
+
+S_n_gam_fit_15_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='15_Beirao_2020'))
+par(mfrow=c(2,2))
+gam.check(S_n_gam_fit_15_k3)
+
+# this is the one that changed shape most dramatically, 
+# let's have a closer look at k = 3 versus k = 4
+S_n_gam_fit_17_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
+                       data = obs %>% 
+                         filter(studyID=='17_Acharya_2015'))
+par(mfrow=c(2,2))
+gam.check(S_n_gam_fit_17_k3)
+
+S_n_gam_fit_17_k4 <- gam(formula = S_n ~ s(elevation, k = 4), 
+                         data = obs %>% 
+                           filter(studyID=='17_Acharya_2015'))
+par(mfrow=c(2,2))
+gam.check(S_n_gam_fit_17_k4)
+
+S_n_gam_fit_7_k3 <- gam(formula = S_n ~ s(elevation, k = 3), 
+                      data = obs %>% 
+                        filter(studyID=='7_Longino_2019'))
+par(mfrow=c(2,2))
+gam.check(S_n_gam_fit_7_k3)
+
+# repeat for S_PIE
+S_PIE_gam_fit_9_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
+                        data = obs %>% 
+                          filter(studyID=='9_Carvalho-Rocha_2021'))
+par(mfrow=c(2,2))
+gam.check(S_PIE_gam_fit_9_k3)
+
+S_PIE_gam_fit_12_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
+                         data = obs %>% 
+                           filter(studyID=='12_Toasaa_2020'))
+par(mfrow=c(2,2))
+gam.check(S_PIE_gam_fit_12_k3)
+
+S_PIE_gam_fit_15_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
+                         data = obs %>% 
+                           filter(studyID=='15_Beirao_2020'))
+par(mfrow=c(2,2))
+gam.check(S_PIE_gam_fit_15_k3)
+
+S_PIE_gam_fit_17_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
+                         data = obs %>% 
+                           filter(studyID=='17_Acharya_2015'))
+par(mfrow=c(2,2))
+gam.check(S_PIE_gam_fit_17_k3)
+
+S_PIE_gam_fit_7_k3 <- gam(formula = S_PIE ~ s(elevation, k = 3), 
+                        data = obs %>% 
+                          filter(studyID=='7_Longino_2019'))
+par(mfrow=c(2,2))
+gam.check(S_PIE_gam_fit_7_k3)
