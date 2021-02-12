@@ -172,6 +172,7 @@ fit_gams <- obs_nest %>%
                                     method = 'REML', 
                                     data = ., 
                                     family = Gamma(link = 'log'))))
+library(broom)
 
 model_output <- fit_gams %>% 
   mutate(S_k3_AICc = map(S_gam_k3, ~AICc(.x)),
@@ -199,7 +200,18 @@ model_output <- fit_gams %>%
          Sn_k3_fitted = map(Sn_gam_k3, ~fitted(.x)),
          Sn_k4_fitted = map(Sn_gam_k4, ~fitted(.x)),
          S_PIE_k3_fitted = map(S_PIE_gam_k3, ~fitted(.x)),
-         S_PIE_k4_fitted = map(S_PIE_gam_k4, ~fitted(.x)))
+         S_PIE_k4_fitted = map(S_PIE_gam_k4, ~fitted(.x)),
+         # get some statistics from the fit models
+         S_k3_tidy = map(S_gam_k3, ~tidy(.x)),
+         S_k4_tidy = map(S_gam_k4, ~tidy(.x)),
+         N_k3_tidy = map(N_gam_k3, ~tidy(.x)),
+         N_k4_tidy = map(N_gam_k4, ~tidy(.x)),
+         Sn_k3_tidy = map(Sn_gam_k3, ~tidy(.x)),
+         Sn_k4_tidy = map(Sn_gam_k4, ~tidy(.x)),
+         S_PIE_k3_tidy = map(S_PIE_gam_k3, ~tidy(.x)),
+         S_PIE_k4_tidy = map(S_PIE_gam_k4, ~tidy(.x)))
+
+model_output$S_k3_tidy[[1]]
 
 # warning ugliness follows
 wrangle <- bind_rows(model_output %>% 
@@ -208,8 +220,9 @@ wrangle <- bind_rows(model_output %>%
   rename(gam = S_gam_k3,
          residuals = S_k3_resids,
          fitted = S_k3_fitted, 
-         aicc = S_k3_AICc) %>% 
-  select(data, metric, k, gam, residuals, fitted, aicc),
+         aicc = S_k3_AICc,
+         stats = S_k3_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   # S, k = 4
   model_output %>% 
     mutate(metric = 'S',
@@ -217,8 +230,9 @@ wrangle <- bind_rows(model_output %>%
     rename(gam = S_gam_k4,
            residuals = S_k4_resids,
            fitted = S_k4_fitted, 
-           aicc = S_k4_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc),
+           aicc = S_k4_AICc,
+           stats = S_k4_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   # N, k = 3
   model_output %>% 
     mutate(metric = 'N',
@@ -226,8 +240,9 @@ wrangle <- bind_rows(model_output %>%
     rename(gam = N_gam_k3,
            residuals = N_k3_resids,
            fitted = N_k3_fitted, 
-           aicc = N_k3_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc),
+           aicc = N_k3_AICc,
+           stats = N_k3_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   # N, k = 4
   model_output %>% 
     mutate(metric = 'N',
@@ -235,8 +250,9 @@ wrangle <- bind_rows(model_output %>%
     rename(gam = N_gam_k4,
            residuals = N_k4_resids,
            fitted = N_k4_fitted, 
-           aicc = N_k4_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc),
+           aicc = N_k4_AICc,
+           stats = N_k4_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   # Sn, 
   model_output %>% 
     mutate(metric = 'Sn',
@@ -244,16 +260,18 @@ wrangle <- bind_rows(model_output %>%
     rename(gam = Sn_gam_k3,
            residuals = Sn_k3_resids,
            fitted = Sn_k3_fitted, 
-           aicc = Sn_k3_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc),
+           aicc = Sn_k3_AICc,
+           stats = Sn_k3_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   model_output %>% 
     mutate(metric = 'Sn',
            k = 4) %>% 
     rename(gam = Sn_gam_k4,
            residuals = Sn_k4_resids,
            fitted = Sn_k4_fitted, 
-           aicc = Sn_k4_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc),
+           aicc = Sn_k4_AICc,
+           stats = Sn_k4_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   # S_PIE
   model_output %>% 
     mutate(metric = 'S_PIE',
@@ -261,16 +279,18 @@ wrangle <- bind_rows(model_output %>%
     rename(gam = S_PIE_gam_k3,
            residuals = S_PIE_k3_resids,
            fitted = S_PIE_k3_fitted, 
-           aicc = S_PIE_k3_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc),
+           aicc = S_PIE_k3_AICc,
+           stats = S_PIE_k3_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats),
   model_output %>% 
     mutate(metric = 'S_PIE',
            k = 4) %>% 
     rename(gam = S_PIE_gam_k4,
            residuals = S_PIE_k4_resids,
            fitted = S_PIE_k4_fitted, 
-           aicc = S_PIE_k4_AICc) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc))
+           aicc = S_PIE_k4_AICc,
+           stats = S_PIE_k4_tidy) %>% 
+    select(data, metric, k, gam, residuals, fitted, aicc, stats))
   
 # plot residuals ~ elevation for the two different values of k 
 wrangle %>% 
