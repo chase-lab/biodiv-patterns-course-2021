@@ -1,4 +1,6 @@
 library(tidyverse)
+library(mgcv)
+library(MuMIn)
 
 read_rds("week 3/3 - Wednesday/results.rds")
 
@@ -110,8 +112,8 @@ cowplot::plot_grid(S_GAM, N_GAM,
 
 ggsave('~/Dropbox/4teaching/biodiv-patterns-course-2021/week 3/4 - Thursday/elevation_gradient_results.png', 
        width = 200, height = 200, units = 'mm')
+
 # Fit GAMs to each data set one at a time, and look at some diagnostic plots 
-library(mgcv)
 S_gam_fit_9_k3 <- gam(formula = S ~ s(elevation, k = 3),
                       method = 'REML',
                       family = 'poisson',
@@ -130,37 +132,45 @@ summary(S_gam_fit_9_k4)
 # lower values of AICc suggest better model
 MuMIn::AICc(S_gam_fit_9_k3, S_gam_fit_9_k4)
 
-library(MuMIn)
+
 # let's do this a bit more efficiently
 obs_nest <- obs %>% 
-  select(-siteID, -site_name, -abundances, -min_n, -latitude, -longitude) %>% 
+  select(studyID, S, N, S_n, S_PIE, elevation) %>% 
   group_by(studyID) %>% 
   nest(data = c(S, S_n, S_PIE, N, elevation))
 
 fit_gams <- obs_nest %>% 
-  mutate(S_gam_k3 = map(data, ~gam(formula = .x$S ~ s(.x$elevation, k = 3),
+  mutate(S_gam_k3 = map(data, ~gam(formula = S ~ s(elevation, k = 3),
                                    method = 'REML',
+                                   data = ., 
                                    family = 'poisson')),
-         S_gam_k4 = map(data, ~gam(formula = .x$S ~ s(.x$elevation, k = 4),
+         S_gam_k4 = map(data, ~gam(formula = S ~ s(elevation, k = 4),
                                    method = 'REML', 
+                                   data = ., 
                                    family = 'poisson')),
-         N_gam_k3 = map(data, ~gam(formula = .x$N ~ s(.x$elevation, k = 3),
+         N_gam_k3 = map(data, ~gam(formula = N ~ s(elevation, k = 3),
                                    method = 'REML',
+                                   data = ., 
                                    family = 'poisson')),
-         N_gam_k4 = map(data, ~gam(formula = .x$N ~ s(.x$elevation, k = 4),
+         N_gam_k4 = map(data, ~gam(formula = N ~ s(elevation, k = 4),
                                    method = 'REML', 
+                                   data = ., 
                                    family = 'poisson')),
-         Sn_gam_k3 = map(data, ~gam(formula = .x$S_n ~ s(.x$elevation, k = 3),
+         Sn_gam_k3 = map(data, ~gam(formula = S_n ~ s(elevation, k = 3),
                                    method = 'REML',
+                                   data = ., 
                                    family = Gamma(link = 'log'))),
-         Sn_gam_k4 = map(data, ~gam(formula = .x$S_n ~ s(.x$elevation, k = 4),
+         Sn_gam_k4 = map(data, ~gam(formula = S_n ~ s(elevation, k = 4),
                                    method = 'REML', 
+                                   data = ., 
                                    family = Gamma(link = 'log'))),
-         S_PIE_gam_k3 = map(data, ~gam(formula = .x$S_PIE ~ s(.x$elevation, k = 3),
+         S_PIE_gam_k3 = map(data, ~gam(formula = S_PIE ~ s(elevation, k = 3),
                                     method = 'REML',
+                                    data = ., 
                                     family = Gamma(link = 'log'))),
-         S_PIE_gam_k4 = map(data, ~gam(formula = .x$S_PIE ~ s(.x$elevation, k = 4),
+         S_PIE_gam_k4 = map(data, ~gam(formula = S_PIE ~ s(elevation, k = 4),
                                     method = 'REML', 
+                                    data = ., 
                                     family = Gamma(link = 'log'))))
 
 model_output <- fit_gams %>% 
@@ -334,16 +344,108 @@ best_models <- wrangle %>%
   filter(filter %in% best_model_filter$filter) %>% 
   select(-filter)
 
+
+# generate predicted values for each metric using the best fit models
 predicted_values <- best_models %>% 
   unnest(cols = c(data)) %>% 
   group_by(studyID, metric) %>% 
   summarise(elevation = seq(min(elevation), max(elevation), length.out = 50)) %>% 
-  nest(data = c(elevation)) %>% 
+  nest(data = c(`elevation`)) %>% 
   left_join(best_models %>% 
               select(studyID, metric, gam)) %>% 
-  mutate(predicted = map(.x = gam,  ~predict(.x, newdata = elevation)))
+  mutate(predicted = map2(.x = gam, .y = data, ~predict(.x, newdata = .y, 
+                                                        # recall the link function, specifying type can be
+                                                        # used to back-transform
+                                                        type = 'response')),
+         predicted.se = map2(.x = gam, .y = data, ~predict(.x, newdata = .y, 
+                                                        # recall the link function, specifying type can be
+                                                        # used to back-transform
+                                                        type = 'response', 
+                                                        # standard error of predictions
+                                                        se.fit = TRUE)[['se.fit']])) %>% 
+  unnest(cols = c(data, predicted, predicted.se))
 
+# wrangle obs dataframe for easier plotting
+wrangle_obs <- bind_rows(obs %>% 
+                           rename(value = S) %>% 
+                           select(studyID, value, elevation) %>% 
+                           mutate(metric = 'S'),
+                         obs %>% 
+                           rename(value = N) %>% 
+                           select(studyID, value, elevation) %>% 
+                           mutate(metric = 'N'),
+                         obs %>% 
+                           rename(value = S_n) %>% 
+                           select(studyID, value, elevation) %>% 
+                           mutate(metric = 'Sn'),
+                         obs %>% 
+                           rename(value = S_PIE) %>% 
+                           select(studyID, value, elevation) %>% 
+                           mutate(metric = 'S_PIE'))
 
+ggplot() +
+  # we can clean up the labels for the facets by using the factor function
+  facet_wrap(~factor(metric,
+                     levels = c('N', 'S', 'Sn', 'S_PIE'),
+                     labels = c('Numbers of individuals (N)',
+                                'Species richness (S)',
+                                'Rarefied richness (Sn)',
+                                'Evenness (S_PIE)')),
+                     scales = 'free_y') +
+  geom_point(data = wrangle_obs %>% 
+             # optional: remove the odd values of S_PIE,
+               filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
+             aes(x = elevation, y = value, colour = studyID)) +
+  geom_line(data = predicted_values %>% 
+              # optional: remove the odd values of S_PIE,
+              filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
+            aes(x = elevation, y = predicted, colour = studyID),
+            size = 1.5) +
+  # add estiamte of uncertainty for predictions
+  geom_ribbon(data = predicted_values %>% 
+                # optional: remove the odd values of S_PIE,
+                filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
+              aes(x = elevation, ymin = predicted - 2*predicted.se, ymax = predicted + 2*predicted.se,
+                  fill = studyID),
+              alpha = 0.3) +
+  scale_colour_manual(values = study_col) +
+  scale_fill_manual(values = study_col) + 
+  theme_minimal() +
+  theme(legend.position = c(1,1),
+        legend.justification = c(1,1),
+        strip.text = element_text(hjust = 0))
+  
+# what about looking at all metrics for each study together?
+# looks like the model for the total abundance data for the 15_Beirao_2020 is 'overfit'??
+ggplot() +
+  # we can clean up the labels for the facets by using the factor function
+  facet_wrap(~ studyID,
+             scales = 'free_y') +
+  geom_point(data = wrangle_obs %>% 
+               # optional: remove the odd values of S_PIE,
+               filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
+             aes(x = elevation, y = value, colour = metric)) +
+  geom_line(data = predicted_values %>% 
+              # optional: remove the odd values of S_PIE,
+              filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
+            aes(x = elevation, y = predicted, colour = metric),
+            size = 1.5) +
+  # add estiamte of uncertainty for predictions
+  geom_ribbon(data = predicted_values %>% 
+                # optional: remove the odd values of S_PIE,
+                filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
+              aes(x = elevation, ymin = predicted - 2*predicted.se, ymax = predicted + 2*predicted.se,
+                  fill = metric),
+              alpha = 0.3) +
+  # scale_colour_manual(values = study_col) +
+  # scale_fill_manual(values = study_col) + 
+  # log-yaxis for clarity
+  scale_y_continuous(trans = 'log2') +
+  theme_minimal() +
+  theme(legend.position = c(1,0),
+        legend.justification = c(1,0),
+        legend.direction = 'horizontal',
+        strip.text = element_text(hjust = 0))
 
 
 # what about a map for the presentation...
