@@ -291,6 +291,14 @@ wrangle <- bind_rows(model_output %>%
            aicc = S_PIE_k4_AICc,
            stats = S_PIE_k4_tidy) %>% 
     select(data, metric, k, gam, residuals, fitted, aicc, stats))
+
+wrangle %>% 
+  filter(k==3) %>% 
+  unnest(stats) %>% 
+  ggplot() +
+  facet_wrap(~studyID) +
+  geom_point(aes(x = metric, y = p.value)) +
+  geom_hline(yintercept = 0.05, lty = 2)
   
 # plot residuals ~ elevation for the two different values of k 
 wrangle %>% 
