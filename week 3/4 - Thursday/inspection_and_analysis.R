@@ -292,6 +292,7 @@ wrangle <- bind_rows(model_output %>%
            stats = S_PIE_k4_tidy) %>% 
     select(data, metric, k, gam, residuals, fitted, aicc, stats))
 
+# these are the p-values that are relevant to the results you are presenting
 wrangle %>% 
   filter(k==3) %>% 
   unnest(stats) %>% 
