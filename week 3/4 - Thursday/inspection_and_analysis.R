@@ -1,6 +1,7 @@
 library(tidyverse)
 library(mgcv)
 library(MuMIn)
+library(broom)
 
 read_rds("week 3/3 - Wednesday/results.rds")
 
@@ -133,187 +134,80 @@ summary(S_gam_fit_9_k4)
 MuMIn::AICc(S_gam_fit_9_k3, S_gam_fit_9_k4)
 
 
-# let's do this a bit more efficiently
-obs_nest <- obs %>% 
-  select(studyID, S, N, S_n, S_PIE, elevation) %>% 
-  group_by(studyID) %>% 
-  nest(data = c(S, S_n, S_PIE, N, elevation))
+# let's fit multiple models more efficiently. First we need to 'tidy' up.
+# We want a row per observation, where an 'observation' will be a data set to
+# which we fit a model, specifically, one row per metric for each study.
+obs_nest <- bind_rows(obs %>% 
+                        rename(value = S) %>% 
+                        mutate(metric = 'S') %>% 
+                        select(studyID, metric, value, elevation),
+                      # N
+                      obs %>% 
+                        rename(value = N) %>% 
+                        mutate(metric = 'N') %>% 
+                        select(studyID, metric, value, elevation),
+                      # Sn
+                      obs %>% 
+                        rename(value = S_n) %>% 
+                        mutate(metric = 'Sn') %>% 
+                        select(studyID, metric, value, elevation),
+                      # S_PIE
+                      obs %>% 
+                        rename(value = S_PIE) %>% 
+                        mutate(metric = 'S_PIE') %>% 
+                        select(studyID, metric, value, elevation)) %>% 
+  select(studyID, metric, value, elevation) %>% 
+  group_by(studyID, metric) %>% 
+  nest(data = c(value, elevation))
+
+# we want to compare two values of the parameter k (that controls the basis
+# function of the smoother)
+obs_nest <- full_join(obs_nest %>% 
+  expand(k = rep(3:4)),
+  obs_nest)
 
 fit_gams <- obs_nest %>% 
-  mutate(S_gam_k3 = map(data, ~gam(formula = S ~ s(elevation, k = 3),
+  group_by(studyID, metric, k) %>% 
+  mutate(gam = map(data, ~gam(formula = value ~ s(elevation, k = k),
                                    method = 'REML',
                                    data = ., 
-                                   family = 'poisson')),
-         S_gam_k4 = map(data, ~gam(formula = S ~ s(elevation, k = 4),
-                                   method = 'REML', 
-                                   data = ., 
-                                   family = 'poisson')),
-         N_gam_k3 = map(data, ~gam(formula = N ~ s(elevation, k = 3),
-                                   method = 'REML',
-                                   data = ., 
-                                   family = 'poisson')),
-         N_gam_k4 = map(data, ~gam(formula = N ~ s(elevation, k = 4),
-                                   method = 'REML', 
-                                   data = ., 
-                                   family = 'poisson')),
-         Sn_gam_k3 = map(data, ~gam(formula = S_n ~ s(elevation, k = 3),
-                                   method = 'REML',
-                                   data = ., 
-                                   family = Gamma(link = 'log'))),
-         Sn_gam_k4 = map(data, ~gam(formula = S_n ~ s(elevation, k = 4),
-                                   method = 'REML', 
-                                   data = ., 
-                                   family = Gamma(link = 'log'))),
-         S_PIE_gam_k3 = map(data, ~gam(formula = S_PIE ~ s(elevation, k = 3),
-                                    method = 'REML',
-                                    data = ., 
-                                    family = Gamma(link = 'log'))),
-         S_PIE_gam_k4 = map(data, ~gam(formula = S_PIE ~ s(elevation, k = 4),
-                                    method = 'REML', 
-                                    data = ., 
-                                    family = Gamma(link = 'log'))))
-library(broom)
+                                 # want poisson for S & N, and Gamma with log-link for Sn & S_PIE
+                                   family = ifelse((metric=='S' | metric=='N'), 
+                                                          'poisson', 
+                                                          "Gamma(link = 'log')"))))
 
-model_output <- fit_gams %>% 
-  mutate(S_k3_AICc = map(S_gam_k3, ~AICc(.x)),
-         S_k4_AICc = map(S_gam_k4, ~AICc(.x)),
-         N_k3_AICc = map(N_gam_k3, ~AICc(.x)),
-         N_k4_AICc = map(N_gam_k4, ~AICc(.x)),
-         Sn_k3_AICc = map(Sn_gam_k3, ~AICc(.x)),
-         Sn_k4_AICc = map(Sn_gam_k4, ~AICc(.x)),
-         S_PIE_k3_AICc = map(S_PIE_gam_k3, ~AICc(.x)),
-         S_PIE_k4_AICc = map(S_PIE_gam_k4, ~AICc(.x)),
+# calculate AICc (for model selection), residuals and fitted values (for model inspection)
+fit_gams <- fit_gams %>% 
+  mutate(AICc = map(gam, ~AICc(.x)),
          # residuals
-         S_k3_resids = map(S_gam_k3, ~residuals(.x)),
-         S_k4_resids = map(S_gam_k4, ~residuals(.x)),
-         N_k3_resids = map(N_gam_k3, ~residuals(.x)),
-         N_k4_resids = map(N_gam_k4, ~residuals(.x)),
-         Sn_k3_resids = map(Sn_gam_k3, ~residuals(.x)),
-         Sn_k4_resids = map(Sn_gam_k4, ~residuals(.x)),
-         S_PIE_k3_resids = map(S_PIE_gam_k3, ~residuals(.x)),
-         S_PIE_k4_resids = map(S_PIE_gam_k4, ~residuals(.x)),
+         resids = map(gam, ~residuals(.x)),
          # fitted values
-         S_k3_fitted = map(S_gam_k3, ~fitted(.x)),
-         S_k4_fitted = map(S_gam_k4, ~fitted(.x)),
-         N_k3_fitted = map(N_gam_k3, ~fitted(.x)),
-         N_k4_fitted = map(N_gam_k4, ~fitted(.x)),
-         Sn_k3_fitted = map(Sn_gam_k3, ~fitted(.x)),
-         Sn_k4_fitted = map(Sn_gam_k4, ~fitted(.x)),
-         S_PIE_k3_fitted = map(S_PIE_gam_k3, ~fitted(.x)),
-         S_PIE_k4_fitted = map(S_PIE_gam_k4, ~fitted(.x)),
+         fitted = map(gam, ~fitted(.x)),
          # get some statistics from the fit models
-         S_k3_tidy = map(S_gam_k3, ~tidy(.x)),
-         S_k4_tidy = map(S_gam_k4, ~tidy(.x)),
-         N_k3_tidy = map(N_gam_k3, ~tidy(.x)),
-         N_k4_tidy = map(N_gam_k4, ~tidy(.x)),
-         Sn_k3_tidy = map(Sn_gam_k3, ~tidy(.x)),
-         Sn_k4_tidy = map(Sn_gam_k4, ~tidy(.x)),
-         S_PIE_k3_tidy = map(S_PIE_gam_k3, ~tidy(.x)),
-         S_PIE_k4_tidy = map(S_PIE_gam_k4, ~tidy(.x)))
+         tidy = map(gam, ~tidy(.x)))
 
-model_output$S_k3_tidy[[1]]
-
-# warning ugliness follows
-wrangle <- bind_rows(model_output %>% 
-  mutate(metric = 'S',
-         k = 3) %>% 
-  rename(gam = S_gam_k3,
-         residuals = S_k3_resids,
-         fitted = S_k3_fitted, 
-         aicc = S_k3_AICc,
-         stats = S_k3_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  # S, k = 4
-  model_output %>% 
-    mutate(metric = 'S',
-           k = 4) %>% 
-    rename(gam = S_gam_k4,
-           residuals = S_k4_resids,
-           fitted = S_k4_fitted, 
-           aicc = S_k4_AICc,
-           stats = S_k4_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  # N, k = 3
-  model_output %>% 
-    mutate(metric = 'N',
-           k = 3) %>% 
-    rename(gam = N_gam_k3,
-           residuals = N_k3_resids,
-           fitted = N_k3_fitted, 
-           aicc = N_k3_AICc,
-           stats = N_k3_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  # N, k = 4
-  model_output %>% 
-    mutate(metric = 'N',
-           k = 4) %>% 
-    rename(gam = N_gam_k4,
-           residuals = N_k4_resids,
-           fitted = N_k4_fitted, 
-           aicc = N_k4_AICc,
-           stats = N_k4_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  # Sn, 
-  model_output %>% 
-    mutate(metric = 'Sn',
-           k = 3) %>% 
-    rename(gam = Sn_gam_k3,
-           residuals = Sn_k3_resids,
-           fitted = Sn_k3_fitted, 
-           aicc = Sn_k3_AICc,
-           stats = Sn_k3_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  model_output %>% 
-    mutate(metric = 'Sn',
-           k = 4) %>% 
-    rename(gam = Sn_gam_k4,
-           residuals = Sn_k4_resids,
-           fitted = Sn_k4_fitted, 
-           aicc = Sn_k4_AICc,
-           stats = Sn_k4_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  # S_PIE
-  model_output %>% 
-    mutate(metric = 'S_PIE',
-           k = 3) %>% 
-    rename(gam = S_PIE_gam_k3,
-           residuals = S_PIE_k3_resids,
-           fitted = S_PIE_k3_fitted, 
-           aicc = S_PIE_k3_AICc,
-           stats = S_PIE_k3_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats),
-  model_output %>% 
-    mutate(metric = 'S_PIE',
-           k = 4) %>% 
-    rename(gam = S_PIE_gam_k4,
-           residuals = S_PIE_k4_resids,
-           fitted = S_PIE_k4_fitted, 
-           aicc = S_PIE_k4_AICc,
-           stats = S_PIE_k4_tidy) %>% 
-    select(data, metric, k, gam, residuals, fitted, aicc, stats))
 
 # these are the p-values that are relevant to the results you are presenting
-wrangle %>% 
-  filter(k==3) %>% 
-  unnest(stats) %>% 
+fit_gams %>% 
+  unnest(tidy) %>% 
   ggplot() +
   facet_wrap(~studyID) +
-  geom_point(aes(x = metric, y = p.value)) +
+  geom_point(aes(x = metric, y = p.value, colour = k)) +
   geom_hline(yintercept = 0.05, lty = 2)
   
 # plot residuals ~ elevation for the two different values of k 
-wrangle %>% 
-  unnest(cols = c(data, residuals)) %>%
+fit_gams %>% 
+  unnest(cols = c(data, resids)) %>%
   ggplot() +
   facet_grid(metric~studyID, scales = 'free_y') +
-  geom_point(aes(x = elevation, y = residuals, col = as.factor(k)),
+  geom_point(aes(x = elevation, y = resids, col = as.factor(k)),
              alpha = 0.5) +
   geom_hline(yintercept = 0, lty = 2)
 
 
 # plot residuals ~ fitted for the two different values of k 
-wrangle %>% 
-  unnest(cols = c(data, residuals, fitted)) %>%
+fit_gams %>% 
+  unnest(cols = c(data, resids, fitted)) %>%
   ggplot() +
   facet_wrap(metric~studyID, scales = 'free', nrow = 4) +
   geom_point(aes(x = fitted, y = residuals, col = as.factor(k)),
@@ -321,54 +215,27 @@ wrangle %>%
   geom_hline(yintercept = 0, lty = 2)
 
 # plot observations ~ fitted for the two different values of k 
-wrangle %>% 
-  unnest(cols = c(data, residuals, fitted)) %>%
-  filter(metric=='S') %>% 
+fit_gams %>% 
+  unnest(cols = c(data, resids, fitted)) %>%
   ggplot() +
-  facet_wrap(~studyID, scales = 'free', nrow = 4) +
-  geom_point(aes(x = fitted, y = S, col = as.factor(k)),
+  facet_wrap(metric~studyID, scales = 'free', nrow = 4) +
+  geom_point(aes(x = fitted, y = value, col = as.factor(k)),
              alpha = 0.5) +
   geom_abline(intercept = 0, slope = 1, lty = 2)
 
-wrangle %>% 
-  unnest(cols = c(data, residuals, fitted)) %>%
-  filter(metric=='N') %>% 
-  ggplot() +
-  facet_wrap(~studyID, scales = 'free', nrow = 4) +
-  geom_point(aes(x = fitted, y = N, col = as.factor(k)),
-             alpha = 0.5) +
-  geom_abline(intercept = 0, slope = 1, lty = 2)
 
-wrangle %>% 
-  unnest(cols = c(data, residuals, fitted)) %>%
-  filter(metric=='Sn') %>% 
-  ggplot() +
-  facet_wrap(~studyID, scales = 'free', nrow = 4) +
-  geom_point(aes(x = fitted, y = Sn, col = as.factor(k)),
-             alpha = 0.5) +
-  geom_abline(intercept = 0, slope = 1, lty = 2)
-
-wrangle %>% 
-  unnest(cols = c(data, residuals, fitted)) %>%
-  filter(metric=='S_PIE') %>% 
-  ggplot() +
-  facet_wrap(~studyID, scales = 'free', nrow = 4) +
-  geom_point(aes(x = fitted, y = S_PIE, col = as.factor(k)),
-             alpha = 0.5) +
-  geom_abline(intercept = 0, slope = 1, lty = 2)
-
-aic_selection <- wrangle %>% 
-  unnest(cols = c(aicc)) %>% 
-  select(studyID, metric, k, aicc) %>% 
+aic_selection <- fit_gams %>% 
+  unnest(cols = c(AICc)) %>% 
+  select(studyID, metric, k, AICc) %>% 
   group_by(studyID, metric) %>% 
-  summarise(min_aicc = min(aicc),
-            k = k[aicc==min_aicc],
-            delta_aicc = max(aicc) - min(aicc))
+  summarise(min_AICc = min(AICc),
+            k = k[AICc==min_AICc],
+            delta_AICc = max(AICc) - min(AICc))
 
 best_model_filter <- aic_selection %>% 
   unite(filter, c(studyID, metric, k))
 
-best_models <- wrangle %>% 
+best_models <- fit_gams %>% 
   unite(filter, c(studyID, metric, k), remove = F) %>% 
   filter(filter %in% best_model_filter$filter) %>% 
   select(-filter)
@@ -383,19 +250,19 @@ predicted_values <- best_models %>%
   left_join(best_models %>% 
               select(studyID, metric, gam)) %>% 
   mutate(predicted = map2(.x = gam, .y = data, ~predict(.x, newdata = .y, 
-                                                        # recall the link function, specifying type can be
-                                                        # used to back-transform
+                                                        # recall the link function. Specifying type can be
+                                                        # used to back-transform:
                                                         type = 'response')),
          predicted.se = map2(.x = gam, .y = data, ~predict(.x, newdata = .y, 
-                                                        # recall the link function, specifying type can be
-                                                        # used to back-transform
+                                                        # recall the link function. Specifying type can be
+                                                        # used to back-transform:
                                                         type = 'response', 
                                                         # standard error of predictions
                                                         se.fit = TRUE)[['se.fit']])) %>% 
   unnest(cols = c(data, predicted, predicted.se))
 
-# wrangle obs dataframe for easier plotting
-wrangle_obs <- bind_rows(obs %>% 
+# fit_gams obs dataframe for easier plotting
+fit_gams_obs <- bind_rows(obs %>% 
                            rename(value = S) %>% 
                            select(studyID, value, elevation) %>% 
                            mutate(metric = 'S'),
@@ -421,7 +288,7 @@ ggplot() +
                                 'Rarefied richness (Sn)',
                                 'Evenness (S_PIE)')),
                      scales = 'free_y') +
-  geom_point(data = wrangle_obs %>% 
+  geom_point(data = fit_gams_obs %>% 
              # optional: remove the odd values of S_PIE,
                filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
              aes(x = elevation, y = value, colour = studyID)) +
@@ -439,6 +306,7 @@ ggplot() +
               alpha = 0.3) +
   scale_colour_manual(values = study_col) +
   scale_fill_manual(values = study_col) + 
+  # scale_y_continuous(trans = 'log2') +
   theme_minimal() +
   theme(legend.position = c(1,1),
         legend.justification = c(1,1),
@@ -450,7 +318,7 @@ ggplot() +
   # we can clean up the labels for the facets by using the factor function
   facet_wrap(~ studyID,
              scales = 'free_y') +
-  geom_point(data = wrangle_obs %>% 
+  geom_point(data = fit_gams_obs %>% 
                # optional: remove the odd values of S_PIE,
                filter(!(studyID=='12_Toasaa_2020' & metric=='S_PIE')),
              aes(x = elevation, y = value, colour = metric)) +
