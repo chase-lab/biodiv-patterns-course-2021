@@ -187,12 +187,13 @@ fit_gams <- fit_gams %>%
          tidy = map(gam, ~tidy(.x)))
 
 
-# these are the p-values that are relevant to the results you are presenting
+# check p-values: this indicates whether there was a relationship between each response and elevation;
+# models that were approximately flat lines (i.e., no relationship) will have large p-values
 fit_gams %>% 
   unnest(tidy) %>% 
   ggplot() +
   facet_wrap(~studyID) +
-  geom_point(aes(x = metric, y = p.value, colour = k)) +
+  geom_point(aes(x = metric, y = p.value, colour = as.factor(k))) +
   geom_hline(yintercept = 0.05, lty = 2)
   
 # plot residuals ~ elevation for the two different values of k 
@@ -210,7 +211,7 @@ fit_gams %>%
   unnest(cols = c(data, resids, fitted)) %>%
   ggplot() +
   facet_wrap(metric~studyID, scales = 'free', nrow = 4) +
-  geom_point(aes(x = fitted, y = residuals, col = as.factor(k)),
+  geom_point(aes(x = fitted, y = resids, col = as.factor(k)),
              alpha = 0.5) +
   geom_hline(yintercept = 0, lty = 2)
 
